@@ -18,16 +18,16 @@ async function AdminLayoutInner({
 			<div className="flex min-h-screen">
 				{/* サイドバーはログイン後に表示 */}
 				{session && (
-					<aside className="w-64 bg-white shadow-lg">
+					<aside className="flex w-64 flex-col bg-white shadow-lg">
 						<div className="border-b p-6">
 							<h1 className="font-bold text-gray-800 text-xl">
-								Fast EC 管理画面
+								Fast EC 管理サイト
 							</h1>
 							<p className="mt-1 text-gray-600 text-sm">
 								ようこそ、{session.user?.name || session.user?.email}
 							</p>
 						</div>
-						<nav className="p-4">
+						<nav className="flex-1 p-4">
 							<ul className="space-y-2">
 								<li>
 									<a
@@ -65,7 +65,7 @@ async function AdminLayoutInner({
 						</nav>
 
 						{/* ログアウトボタン */}
-						<div className="absolute right-4 bottom-4 left-4">
+						<div className="border-t p-4">
 							<form action="/api/auth/signout" method="post">
 								<button
 									type="submit"
