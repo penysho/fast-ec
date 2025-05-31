@@ -1,9 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { useState } from "react";
-import { auth } from "~/server/auth";
 
 // ダミーデータ
 const dummyProducts = [
@@ -320,7 +318,9 @@ export default function AdminProductsPage() {
 										</td>
 										<td className="whitespace-nowrap px-6 py-4">
 											<div
-												className={`text-sm ${product.stock === 0 ? "text-red-600" : "text-gray-900"}`}
+												className={`text-sm ${
+													product.stock === 0 ? "text-red-600" : "text-gray-900"
+												}`}
 											>
 												{product.stock === 0
 													? "在庫切れ"
