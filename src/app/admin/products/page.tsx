@@ -1,7 +1,9 @@
 "use client";
 
+import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 // ダミーデータ
 const dummyProducts = [
@@ -71,11 +73,39 @@ const categories = ["すべて", "衣類", "靴", "アクセサリー"];
 const statuses = ["すべて", "公開", "下書き", "在庫切れ"];
 
 export default function AdminProductsPage() {
+	const { data: session, status } = useSession();
+	const router = useRouter();
 	const [searchTerm, setSearchTerm] = useState("");
 	const [selectedCategory, setSelectedCategory] = useState("すべて");
 	const [selectedStatus, setSelectedStatus] = useState("すべて");
 	const [currentPage, setCurrentPage] = useState(1);
 	const [itemsPerPage] = useState(10);
+
+	// 認証チェック
+	useEffect(() => {
+		if (status === "loading") return; // まだ認証状態を確認中
+
+		if (!session) {
+			router.push("/admin/login");
+		}
+	}, [session, status, router]);
+
+	// 認証状態を確認中は読み込み画面を表示
+	if (status === "loading") {
+		return (
+			<div className="flex min-h-screen items-center justify-center">
+				<div className="text-center">
+					<div className="mx-auto h-12 w-12 animate-spin rounded-full border-indigo-600 border-b-2" />
+					<p className="mt-4 text-gray-600">読み込み中...</p>
+				</div>
+			</div>
+		);
+	}
+
+	// 未ログインの場合は何も表示しない（リダイレクト中）
+	if (!session) {
+		return null;
+	}
 
 	// フィルタリング
 	const filteredProducts = dummyProducts.filter((product) => {

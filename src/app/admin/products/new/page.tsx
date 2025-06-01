@@ -4,6 +4,9 @@ import { ImagePreview } from "@/components/ui/ImagePreview";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useProductForm } from "@/hooks/useProductForm";
 import { ProductCategories } from "@/types/product";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { Controller } from "react-hook-form";
 
 const statuses = [
@@ -12,6 +15,18 @@ const statuses = [
 ];
 
 export default function NewProductPage() {
+	const { data: session, status } = useSession();
+	const router = useRouter();
+
+	// 認証チェック
+	useEffect(() => {
+		if (status === "loading") return; // まだ認証状態を確認中
+
+		if (!session) {
+			router.push("/admin/login");
+		}
+	}, [session, status, router]);
+
 	const {
 		form,
 		isLoading,
@@ -32,6 +47,23 @@ export default function NewProductPage() {
 		control,
 		formState: { errors, isValid },
 	} = form;
+
+	// 認証状態を確認中は読み込み画面を表示
+	if (status === "loading") {
+		return (
+			<div className="flex min-h-screen items-center justify-center">
+				<div className="text-center">
+					<div className="mx-auto h-12 w-12 animate-spin rounded-full border-indigo-600 border-b-2" />
+					<p className="mt-4 text-gray-600">読み込み中...</p>
+				</div>
+			</div>
+		);
+	}
+
+	// 未ログインの場合は何も表示しない（リダイレクト中）
+	if (!session) {
+		return null;
+	}
 
 	return (
 		<div className="space-y-6">

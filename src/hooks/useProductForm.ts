@@ -8,12 +8,47 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { api } from "~/trpc/react";
 
+/**
+ * Product form management hook
+ *
+ * Provides form state management, validation, and submission logic for product creation.
+ * Includes image upload handling, drag & drop functionality, and proper error handling.
+ *
+ * @returns Object containing form methods, state, and event handlers
+ */
 export function useProductForm() {
 	const [isLoading, setIsLoading] = useState(false);
 	const [dragActive, setDragActive] = useState(false);
 	const router = useRouter();
 	const toast = useToast();
+
+	const createProduct = api.product.create.useMutation({
+		onSuccess: () => {
+			toast.success("商品を保存しました", "商品が正常に登録されました");
+			setTimeout(() => {
+				router.push("/admin/products");
+			}, 1500);
+		},
+		onError: (error) => {
+			console.error("保存エラー:", error);
+
+			// 認証エラーの場合はログインページにリダイレクト
+			if (error.data?.code === "UNAUTHORIZED") {
+				toast.error("認証が必要です", "ログインしてから再度お試しください");
+				setTimeout(() => {
+					router.push("/admin/login");
+				}, 1500);
+				return;
+			}
+
+			toast.error("保存に失敗しました", "もう一度お試しください");
+		},
+		onSettled: () => {
+			setIsLoading(false);
+		},
+	});
 
 	const form = useForm<ProductFormData>({
 		resolver: zodResolver(productSchema),
@@ -37,24 +72,7 @@ export function useProductForm() {
 	// フォーム送信処理
 	const onSubmit = async (data: ProductFormData) => {
 		setIsLoading(true);
-		try {
-			// TODO: API呼び出し
-			await new Promise((resolve) => setTimeout(resolve, 1000));
-			console.log("商品保存:", data);
-
-			// 成功時の処理
-			toast.success("商品を保存しました", "商品が正常に登録されました");
-
-			// 商品一覧ページにリダイレクト
-			setTimeout(() => {
-				router.push("/admin/products");
-			}, 1500);
-		} catch (error) {
-			console.error("保存エラー:", error);
-			toast.error("保存に失敗しました", "もう一度お試しください");
-		} finally {
-			setIsLoading(false);
-		}
+		createProduct.mutate(data);
 	};
 
 	// ドラッグ&ドロップ処理
