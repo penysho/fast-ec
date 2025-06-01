@@ -1,13 +1,11 @@
-import { redirect } from "next/navigation";
-import { auth } from "~/server/auth";
+import type { Metadata } from "next";
 
-export default async function AdminDashboardPage() {
-	const session = await auth();
+export const metadata: Metadata = {
+	title: "ダッシュボード - Fast EC",
+	description: "管理システムの概要ダッシュボード",
+};
 
-	if (!session) {
-		redirect("/admin/login");
-	}
-
+export default function AdminDashboardPage() {
 	return (
 		<div className="space-y-6">
 			{/* ページヘッダー */}
