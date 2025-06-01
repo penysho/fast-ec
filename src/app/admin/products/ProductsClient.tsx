@@ -6,9 +6,6 @@ import { api } from "~/trpc/react";
 
 const statuses = ["すべて", "公開", "下書き", "在庫切れ"];
 
-const PLACEHOLDER_IMAGE =
-	"https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=80&h=80&fit=crop&crop=face";
-
 /**
  * Products client component
  *

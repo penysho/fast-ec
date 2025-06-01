@@ -1,40 +1,44 @@
 import { useToast } from "@/hooks/useToast";
-import {
-	ProductCategories,
-	type ProductFormData,
-	productSchema,
-} from "@/types/product";
+import { type ProductFormData, productSchema } from "@/types/product";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { api } from "~/trpc/react";
 
 /**
- * Product form management hook
+ * Product edit form management hook
  *
- * Provides form state management, validation, and submission logic for product creation.
- * Includes image upload handling, drag & drop functionality, and proper error handling.
+ * Provides form state management, validation, and submission logic for product editing.
+ * Includes existing data loading, image upload handling, drag & drop functionality,
+ * and proper error handling.
  *
+ * @param productId - ID of the product to edit
  * @returns Object containing form methods, state, and event handlers
  */
-export function useProductForm() {
+export function useProductEditForm(productId: string) {
 	const [isLoading, setIsLoading] = useState(false);
 	const [dragActive, setDragActive] = useState(false);
 	const router = useRouter();
 	const toast = useToast();
 	const utils = api.useUtils();
 
-	const createProduct = api.product.create.useMutation({
+	// 商品データの取得
+	const { data: product, isLoading: isLoadingProduct } =
+		api.product.getById.useQuery({ id: productId }, { enabled: !!productId });
+
+	// 商品更新mutation
+	const updateProduct = api.product.update.useMutation({
 		onSuccess: () => {
-			toast.success("商品を保存しました", "商品が正常に登録されました");
+			toast.success("商品を更新しました", "商品が正常に更新されました");
 			utils.product.list.invalidate();
+			utils.product.getById.invalidate({ id: productId });
 			setTimeout(() => {
 				router.push("/admin/products");
 			}, 1500);
 		},
 		onError: (error) => {
-			console.error("保存エラー:", error);
+			console.error("更新エラー:", error);
 
 			// 認証エラーの場合はログインページにリダイレクト
 			if (error.data?.code === "UNAUTHORIZED") {
@@ -45,7 +49,7 @@ export function useProductForm() {
 				return;
 			}
 
-			toast.error("保存に失敗しました", "もう一度お試しください");
+			toast.error("更新に失敗しました", "もう一度お試しください");
 		},
 		onSettled: () => {
 			setIsLoading(false);
@@ -57,7 +61,7 @@ export function useProductForm() {
 		defaultValues: {
 			name: "",
 			description: "",
-			category: ProductCategories[0] || "衣類",
+			category: "衣類",
 			price: "",
 			stock: "",
 			status: "draft",
@@ -69,12 +73,44 @@ export function useProductForm() {
 		mode: "onChange",
 	});
 
+	// 商品データが取得できたらフォームに設定
+	useEffect(() => {
+		if (product) {
+			// ステータスの変換：DBでは様々な形式、フォームでは英語
+			let formStatus: "draft" | "published" = "draft";
+			const statusValue = product.status as unknown;
+			if (
+				statusValue === "公開" ||
+				statusValue === "PUBLISHED" ||
+				statusValue === "published"
+			) {
+				formStatus = "published";
+			}
+
+			form.reset({
+				name: product.name,
+				description: product.description,
+				category: product.category.name,
+				price: product.price.toString(),
+				stock: product.stock.toString(),
+				status: formStatus,
+				tags: product.tags?.join(", ") || "",
+				metaTitle: product.metaTitle || "",
+				metaDescription: product.metaDescription || "",
+				images: [], // 既存の画像は別途処理
+			});
+		}
+	}, [product, form]);
+
 	const watchedImages = form.watch("images") || [];
 
 	// フォーム送信処理
 	const onSubmit = async (data: ProductFormData) => {
 		setIsLoading(true);
-		createProduct.mutate(data);
+		updateProduct.mutate({
+			id: productId,
+			...data,
+		});
 	};
 
 	// ドラッグ&ドロップ処理
@@ -160,13 +196,14 @@ export function useProductForm() {
 			);
 			if (!confirmed) return;
 		}
-		form.reset();
 		router.push("/admin/products");
 	};
 
 	return {
 		form,
+		product,
 		isLoading,
+		isLoadingProduct,
 		dragActive,
 		watchedImages,
 		onSubmit,
