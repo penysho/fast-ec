@@ -406,7 +406,7 @@ export const productRouter = createTRPCRouter({
 				: [];
 
 			// Convert price and stock from string to number
-			const price = Math.round(Number(input.price) * 100); // Convert to cents
+			const price = Math.round(Number(input.price));
 			const stock = Number(input.stock);
 
 			// Map status
