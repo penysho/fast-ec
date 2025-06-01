@@ -262,7 +262,6 @@ model User {
     // Relations
     accounts      Account[]
     sessions      Session[]
-    posts         Post[]
     products      Product[]  // Products created by this user (for admin)
     cart          Cart?
     orders        Order[]
