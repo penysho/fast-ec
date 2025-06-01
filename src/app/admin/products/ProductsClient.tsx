@@ -22,6 +22,7 @@ export function ProductsClient() {
 	const [selectedStatus, setSelectedStatus] = useState("すべて");
 	const [currentPage, setCurrentPage] = useState(1);
 	const [itemsPerPage] = useState(10);
+	const utils = api.useUtils();
 
 	const { data: productsData } = api.product.list.useQuery({
 		limit: 10,
@@ -34,6 +35,12 @@ export function ProductsClient() {
 
 	const { data: categoriesData } = api.product.getCategories.useQuery();
 	const categories = categoriesData ?? [];
+
+	const deleteProduct = api.product.delete.useMutation({
+		onSuccess: () => {
+			utils.product.list.invalidate();
+		},
+	});
 
 	// フィルタリング
 	const filteredProducts = products.filter((product) => {
@@ -329,8 +336,9 @@ export function ProductsClient() {
 														if (
 															confirm(`「${product.name}」を削除しますか？`)
 														) {
-															// TODO: 削除処理
-															console.log("削除:", product.id);
+															deleteProduct.mutate({
+																id: product.id,
+															});
 														}
 													}}
 												>
