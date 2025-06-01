@@ -1,286 +1,248 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
-    provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-    provider = "postgresql"
-    // NOTE: When using mysql or sqlserver, uncomment the @db.Text annotations in model Account below
-    // Further reading:
-    // https://next-auth.js.org/adapters/prisma#create-the-prisma-schema
-    // https://www.prisma.io/docs/reference/api-reference/prisma-schema-reference#string
-    url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
-// E-commerce Models
-
 model Category {
-    id          String    @id @default(cuid())
-    name        String    @unique
-    description String?
-    slug        String    @unique
-    products    Product[]
-    createdAt   DateTime  @default(now())
-    updatedAt   DateTime  @updatedAt
+  id          String    @id @default(cuid())
+  name        String    @unique
+  description String?
+  slug        String    @unique
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
 
-    @@index([slug])
+  @@index([slug])
 }
 
 model Product {
-    id              String         @id @default(cuid())
-    name            String
-    description     String         @db.Text
-    slug            String         @unique
-    price           Int            // Price in cents (e.g., $10.99 = 1099)
-    stock           Int            @default(0)
-    status          ProductStatus  @default(DRAFT)
-    tags            String[]       @default([])
-    metaTitle       String?
-    metaDescription String?
-    categoryId      String
-    createdById     String
-    createdAt       DateTime       @default(now())
-    updatedAt       DateTime       @updatedAt
+  id              String         @id @default(cuid())
+  name            String
+  description     String
+  slug            String         @unique
+  price           Int
+  stock           Int            @default(0)
+  status          ProductStatus  @default(DRAFT)
+  tags            String[]       @default([])
+  metaTitle       String?
+  metaDescription String?
+  categoryId      String
+  createdById     String
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  cartItems       CartItem[]
+  orderItems      OrderItem[]
+  category        Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdBy       User           @relation(fields: [createdById], references: [id])
+  images          ProductImage[]
 
-    // Relations
-    category        Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-    createdBy       User           @relation(fields: [createdById], references: [id])
-    images          ProductImage[]
-    cartItems       CartItem[]
-    orderItems      OrderItem[]
-
-    @@index([slug])
-    @@index([status])
-    @@index([categoryId])
-    @@index([createdById])
+  @@index([slug])
+  @@index([status])
+  @@index([categoryId])
+  @@index([createdById])
 }
 
 model ProductImage {
-    id        String  @id @default(cuid())
-    url       String
-    alt       String?
-    order     Int     @default(0)
-    productId String
-    createdAt DateTime @default(now())
+  id        String   @id @default(cuid())
+  url       String
+  alt       String?
+  order     Int      @default(0)
+  productId String
+  createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-    // Relations
-    product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-    @@index([productId])
-    @@index([order])
+  @@index([productId])
+  @@index([order])
 }
 
 model Cart {
-    id        String     @id @default(cuid())
-    userId    String     @unique
-    createdAt DateTime   @default(now())
-    updatedAt DateTime   @updatedAt
-
-    // Relations
-    user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-    items     CartItem[]
+  id        String     @id @default(cuid())
+  userId    String     @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
 }
 
 model CartItem {
-    id        String   @id @default(cuid())
-    quantity  Int      @default(1)
-    cartId    String
-    productId String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  id        String   @id @default(cuid())
+  quantity  Int      @default(1)
+  cartId    String
+  productId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-    // Relations
-    cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
-    product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-    @@unique([cartId, productId])
-    @@index([cartId])
-    @@index([productId])
+  @@unique([cartId, productId])
+  @@index([cartId])
+  @@index([productId])
 }
 
 model Order {
-    id            String      @id @default(cuid())
-    orderNumber   String      @unique
-    status        OrderStatus @default(PENDING)
-    totalAmount   Int         // Total amount in cents
-    shippingFee   Int         @default(0)
-    taxAmount     Int         @default(0)
+  id              String      @id @default(cuid())
+  orderNumber     String      @unique
+  status          OrderStatus @default(PENDING)
+  totalAmount     Int
+  shippingFee     Int         @default(0)
+  taxAmount       Int         @default(0)
+  shippingName    String
+  shippingEmail   String
+  shippingPhone   String?
+  shippingAddress String
+  shippingCity    String
+  shippingState   String
+  shippingZip     String
+  shippingCountry String      @default("Japan")
+  billingName     String?
+  billingEmail    String?
+  billingPhone    String?
+  billingAddress  String?
+  billingCity     String?
+  billingState    String?
+  billingZip      String?
+  billingCountry  String?
+  userId          String
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  shippedAt       DateTime?
+  deliveredAt     DateTime?
+  user            User        @relation(fields: [userId], references: [id])
+  items           OrderItem[]
+  payment         Payment?
 
-    // Shipping Information
-    shippingName     String
-    shippingEmail    String
-    shippingPhone    String?
-    shippingAddress  String
-    shippingCity     String
-    shippingState    String
-    shippingZip      String
-    shippingCountry  String  @default("Japan")
-
-    // Billing Information (optional, same as shipping if not provided)
-    billingName      String?
-    billingEmail     String?
-    billingPhone     String?
-    billingAddress   String?
-    billingCity      String?
-    billingState     String?
-    billingZip       String?
-    billingCountry   String?
-
-    userId        String
-    createdAt     DateTime     @default(now())
-    updatedAt     DateTime     @updatedAt
-    shippedAt     DateTime?
-    deliveredAt   DateTime?
-
-    // Relations
-    user          User         @relation(fields: [userId], references: [id])
-    items         OrderItem[]
-    payment       Payment?
-
-    @@index([userId])
-    @@index([status])
-    @@index([orderNumber])
+  @@index([userId])
+  @@index([status])
+  @@index([orderNumber])
 }
 
 model OrderItem {
-    id        String   @id @default(cuid())
-    quantity  Int
-    price     Int      // Price at the time of order (in cents)
-    orderId   String
-    productId String
-    createdAt DateTime @default(now())
+  id        String   @id @default(cuid())
+  quantity  Int
+  price     Int
+  orderId   String
+  productId String
+  createdAt DateTime @default(now())
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id])
 
-    // Relations
-    order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-    product   Product  @relation(fields: [productId], references: [id])
-
-    @@index([orderId])
-    @@index([productId])
+  @@index([orderId])
+  @@index([productId])
 }
 
 model Payment {
-    id            String        @id @default(cuid())
-    amount        Int           // Amount in cents
-    currency      String        @default("JPY")
-    status        PaymentStatus @default(PENDING)
-    method        PaymentMethod
-    stripePaymentIntentId String? // For Stripe integration
-    orderId       String        @unique
-    createdAt     DateTime      @default(now())
-    updatedAt     DateTime      @updatedAt
-    paidAt        DateTime?
+  id                    String        @id @default(cuid())
+  amount                Int
+  currency              String        @default("JPY")
+  status                PaymentStatus @default(PENDING)
+  method                PaymentMethod
+  stripePaymentIntentId String?
+  orderId               String        @unique
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  paidAt                DateTime?
+  order                 Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
-    // Relations
-    order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
-    @@index([status])
-    @@index([stripePaymentIntentId])
+  @@index([status])
+  @@index([stripePaymentIntentId])
 }
 
-// Enums
-enum ProductStatus {
-    DRAFT
-    PUBLISHED
-    ARCHIVED
-}
-
-enum OrderStatus {
-    PENDING
-    CONFIRMED
-    PROCESSING
-    SHIPPED
-    DELIVERED
-    CANCELLED
-}
-
-enum PaymentStatus {
-    PENDING
-    SUCCEEDED
-    FAILED
-    CANCELLED
-    REFUNDED
-}
-
-enum PaymentMethod {
-    CREDIT_CARD
-    BANK_TRANSFER
-    CASH_ON_DELIVERY
-    DIGITAL_WALLET
-}
-
-// NextAuth.js Required Models
 model Account {
-    id                       String  @id @default(cuid())
-    userId                   String
-    type                     String
-    provider                 String
-    providerAccountId        String
-    refresh_token            String? // @db.Text
-    access_token             String? // @db.Text
-    expires_at               Int?
-    token_type               String?
-    scope                    String?
-    id_token                 String? // @db.Text
-    session_state            String?
-    user                     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-    refresh_token_expires_in Int?
+  id                       String  @id @default(cuid())
+  userId                   String
+  type                     String
+  provider                 String
+  providerAccountId        String
+  refresh_token            String?
+  access_token             String?
+  expires_at               Int?
+  token_type               String?
+  scope                    String?
+  id_token                 String?
+  session_state            String?
+  refresh_token_expires_in Int?
+  user                     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-    @@unique([provider, providerAccountId])
+  @@unique([provider, providerAccountId])
 }
 
 model Session {
-    id           String   @id @default(cuid())
-    sessionToken String   @unique
-    userId       String
-    expires      DateTime
-    user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model User {
-    id            String    @id @default(cuid())
-    name          String?
-    email         String?   @unique
-    emailVerified DateTime?
-    image         String?
-    role          UserRole  @default(CUSTOMER)
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          UserRole  @default(CUSTOMER)
+  phone         String?
+  address       String?
+  city          String?
+  state         String?
+  zipCode       String?
+  country       String?   @default("Japan")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  accounts      Account[]
+  cart          Cart?
+  orders        Order[]
+  products      Product[]
+  sessions      Session[]
 
-    // Customer specific fields
-    phone         String?
-
-    // Address information (default shipping address)
-    address       String?
-    city          String?
-    state         String?
-    zipCode       String?
-    country       String?   @default("Japan")
-
-    createdAt     DateTime  @default(now())
-    updatedAt     DateTime  @updatedAt
-
-    // Relations
-    accounts      Account[]
-    sessions      Session[]
-    products      Product[]  // Products created by this user (for admin)
-    cart          Cart?
-    orders        Order[]
-
-    @@index([email])
-    @@index([role])
+  @@index([email])
+  @@index([role])
 }
 
 model VerificationToken {
-    identifier String
-    token      String   @unique
-    expires    DateTime
+  identifier String
+  token      String   @unique
+  expires    DateTime
 
-    @@unique([identifier, token])
+  @@unique([identifier, token])
 }
 
-// User roles enum
+enum ProductStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  BANK_TRANSFER
+  CASH_ON_DELIVERY
+  DIGITAL_WALLET
+}
+
 enum UserRole {
-    CUSTOMER
-    ADMIN
-    SUPER_ADMIN
+  CUSTOMER
+  ADMIN
+  SUPER_ADMIN
 }
