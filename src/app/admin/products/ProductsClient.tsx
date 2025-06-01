@@ -2,73 +2,12 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { api } from "~/trpc/react";
 
-// ダミーデータ
-const dummyProducts = [
-	{
-		id: 1,
-		name: "プレミアムTシャツ",
-		category: "衣類",
-		price: 2980,
-		stock: 45,
-		status: "公開",
-		image:
-			"https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=80&h=80&fit=crop&crop=face",
-		createdAt: "2024-01-15",
-		updatedAt: "2024-01-20",
-	},
-	{
-		id: 2,
-		name: "デニムジャケット",
-		category: "衣類",
-		price: 8980,
-		stock: 12,
-		status: "公開",
-		image:
-			"https://images.unsplash.com/photo-1544966503-7cc5ac882d2c?w=80&h=80&fit=crop&crop=face",
-		createdAt: "2024-01-10",
-		updatedAt: "2024-01-18",
-	},
-	{
-		id: 3,
-		name: "スニーカー",
-		category: "靴",
-		price: 12800,
-		stock: 8,
-		status: "下書き",
-		image:
-			"https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=80&h=80&fit=crop&crop=face",
-		createdAt: "2024-01-08",
-		updatedAt: "2024-01-19",
-	},
-	{
-		id: 4,
-		name: "レザーバッグ",
-		category: "アクセサリー",
-		price: 24800,
-		stock: 0,
-		status: "在庫切れ",
-		image:
-			"https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=80&h=80&fit=crop&crop=face",
-		createdAt: "2024-01-05",
-		updatedAt: "2024-01-17",
-	},
-	{
-		id: 5,
-		name: "腕時計",
-		category: "アクセサリー",
-		price: 45000,
-		stock: 23,
-		status: "公開",
-		image:
-			"https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=80&h=80&fit=crop&crop=face",
-		createdAt: "2024-01-12",
-		updatedAt: "2024-01-21",
-	},
-];
-
-const categories = ["すべて", "衣類", "靴", "アクセサリー"];
 const statuses = ["すべて", "公開", "下書き", "在庫切れ"];
+
+const PLACEHOLDER_IMAGE =
+	"https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=80&h=80&fit=crop&crop=face";
 
 /**
  * Products client component
@@ -87,13 +26,26 @@ export function ProductsClient() {
 	const [currentPage, setCurrentPage] = useState(1);
 	const [itemsPerPage] = useState(10);
 
+	const { data: productsData } = api.product.list.useQuery({
+		limit: 10,
+		cursor: undefined,
+		search: undefined,
+		category: undefined,
+		status: undefined,
+	});
+	const products = productsData?.products ?? [];
+
+	const { data: categoriesData } = api.product.getCategories.useQuery();
+	const categories = categoriesData ?? [];
+
 	// フィルタリング
-	const filteredProducts = dummyProducts.filter((product) => {
+	const filteredProducts = products.filter((product) => {
 		const matchesSearch = product.name
 			.toLowerCase()
 			.includes(searchTerm.toLowerCase());
 		const matchesCategory =
-			selectedCategory === "すべて" || product.category === selectedCategory;
+			selectedCategory === "すべて" ||
+			product.category.name === selectedCategory;
 		const matchesStatus =
 			selectedStatus === "すべて" || product.status === selectedStatus;
 		return matchesSearch && matchesCategory && matchesStatus;
@@ -209,9 +161,10 @@ export function ProductsClient() {
 							onChange={(e) => setSelectedCategory(e.target.value)}
 							className="mt-1 block w-full rounded-md border border-gray-300 py-2 pr-10 pl-3 text-base focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
 						>
+							<option value="すべて">すべて</option>
 							{categories.map((category) => (
-								<option key={category} value={category}>
-									{category}
+								<option key={category.id} value={category.name}>
+									{category.name}
 								</option>
 							))}
 						</select>
@@ -302,7 +255,7 @@ export function ProductsClient() {
 												<div className="h-10 w-10 flex-shrink-0">
 													<img
 														className="h-10 w-10 rounded-full object-cover"
-														src={product.image}
+														src={product.images[0]?.url || PLACEHOLDER_IMAGE}
 														alt={product.name}
 													/>
 												</div>
@@ -318,7 +271,7 @@ export function ProductsClient() {
 										</td>
 										<td className="whitespace-nowrap px-6 py-4">
 											<div className="text-gray-900 text-sm">
-												{product.category}
+												{product.category.name}
 											</div>
 										</td>
 										<td className="whitespace-nowrap px-6 py-4">
@@ -343,7 +296,7 @@ export function ProductsClient() {
 											</span>
 										</td>
 										<td className="whitespace-nowrap px-6 py-4 text-gray-500 text-sm">
-											{product.updatedAt}
+											{new Date(product.updatedAt).toLocaleDateString("ja-JP")}
 										</td>
 										<td className="whitespace-nowrap px-6 py-4 text-right font-medium text-sm">
 											<div className="flex items-center space-x-2">
