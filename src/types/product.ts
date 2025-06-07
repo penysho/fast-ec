@@ -15,7 +15,7 @@ export const ProductCategories = [
 	"靴",
 	"アクセサリー",
 	"電子機器",
-	"本・雑誌",
+	"本",
 	"スポーツ",
 	"その他",
 ] as const;
@@ -64,21 +64,36 @@ export const productSchema = z.object({
 
 export type ProductFormData = z.infer<typeof productSchema>;
 
-// API用の商品データ型
+// API用の商品データ型（実際のAPIレスポンスに合わせて更新）
 export interface Product {
 	id: string;
 	name: string;
 	description: string;
-	category: ProductCategory;
+	slug: string;
 	price: number;
 	stock: number;
-	status: ProductStatusType;
-	tags?: string[];
-	metaTitle?: string;
-	metaDescription?: string;
-	images?: string[];
+	status: string;
+	tags: string[];
+	metaTitle: string | null;
+	metaDescription: string | null;
+	categoryId: string;
+	createdById: string;
 	createdAt: Date;
 	updatedAt: Date;
+	category: {
+		name: string;
+		slug: string;
+	};
+	images: {
+		id: string;
+		url: string;
+		alt: string | null;
+		order: number;
+	}[];
+	createdBy: {
+		name: string | null;
+		email: string | null;
+	};
 }
 
 // 商品作成用のリクエスト型

@@ -1,54 +1,68 @@
-import Link from "next/link";
+"use client";
 
-import { auth } from "~/server/auth";
-import { HydrateClient } from "~/trpc/server";
+import { useState } from "react";
+import { CategorySection } from "~/components/ui/CategorySection";
+import { FeaturedProducts } from "~/components/ui/FeaturedProducts";
+import { Footer } from "~/components/ui/Footer";
+import { Header } from "~/components/ui/Header";
+import { HeroSection } from "~/components/ui/HeroSection";
+import { api } from "~/trpc/react";
 
-export default async function Home() {
-	const session = await auth();
+/**
+ * Homepage component for the e-commerce site
+ *
+ * @returns Complete homepage with header, hero, categories, featured products, and footer
+ */
+export default function HomePage() {
+	const [addingToCart, setAddingToCart] = useState<string | null>(null);
+
+	// Fetch featured products (published products, limited to 8)
+	const { data: productsData, isLoading: isProductsLoading } =
+		api.product.list.useQuery({
+			status: "PUBLISHED",
+			limit: 8,
+		});
+
+	// Mock user session data - in real app, this would come from auth
+	const mockSession = {
+		isAuthenticated: false,
+		userName: null,
+		cartItemCount: 0,
+	};
+
+	const handleAddToCart = async (productId: string) => {
+		setAddingToCart(productId);
+
+		// Simulate API call delay
+		await new Promise((resolve) => setTimeout(resolve, 1000));
+
+		// Here you would implement actual cart functionality
+		console.log(`Added product ${productId} to cart`);
+
+		setAddingToCart(null);
+	};
+
+	const products = productsData?.products || [];
 
 	return (
-		<HydrateClient>
-			<main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c] text-white">
-				<div className="container flex flex-col items-center justify-center gap-12 px-4 py-16">
-					<h1 className="font-extrabold text-5xl tracking-tight sm:text-[5rem]">
-						Fast <span className="text-[hsl(280,100%,70%)]">EC</span> Site
-					</h1>
-					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-8">
-						<Link
-							className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 hover:bg-white/20"
-							href="/admin/products"
-						>
-							<h3 className="font-bold text-2xl">商品管理 →</h3>
-							<div className="text-lg">
-								商品の追加、編集、削除を行うことができます。
-							</div>
-						</Link>
-						<Link
-							className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 hover:bg-white/20"
-							href="/products"
-						>
-							<h3 className="font-bold text-2xl">商品一覧 →</h3>
-							<div className="text-lg">
-								登録されている商品を閲覧することができます。
-							</div>
-						</Link>
-					</div>
+		<div className="min-h-screen bg-white">
+			<Header
+				cartItemCount={mockSession.cartItemCount}
+				isAuthenticated={mockSession.isAuthenticated}
+				userName={mockSession.userName}
+			/>
 
-					<div className="flex flex-col items-center gap-2">
-						<div className="flex flex-col items-center justify-center gap-4">
-							<p className="text-center text-2xl text-white">
-								{session && <span>Logged in as {session.user?.name}</span>}
-							</p>
-							<Link
-								href={session ? "/api/auth/signout" : "/api/auth/signin"}
-								className="rounded-full bg-white/10 px-10 py-3 font-semibold no-underline transition hover:bg-white/20"
-							>
-								{session ? "Sign out" : "Sign in"}
-							</Link>
-						</div>
-					</div>
-				</div>
+			<main>
+				<HeroSection />
+				<CategorySection />
+				<FeaturedProducts
+					products={products}
+					onAddToCart={handleAddToCart}
+					isLoading={isProductsLoading}
+				/>
 			</main>
-		</HydrateClient>
+
+			<Footer />
+		</div>
 	);
 }
